@@ -1,0 +1,318 @@
+-- Tabela Freelancer
+CREATE TABLE dbo.Freelancer (
+    id INT PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL,
+    sobrenome VARCHAR(100) NOT NULL,
+    dataNascimento DATE NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    senha VARCHAR(64) NOT NULL,
+    experiencia VARCHAR(5000) NOT NULL,
+    portfolio VARCHAR(500) NOT NULL,
+    dataCadastro DATETIME NOT NULL
+);
+
+-- Tabela EquipeSuporte
+CREATE TABLE dbo.EquipeSuporte (
+    id INT PRIMARY KEY,
+    responsavel VARCHAR(100) NOT NULL
+);
+
+-- Tabela Empresa
+CREATE TABLE dbo.Empresa (
+    id INT PRIMARY KEY,
+    equipeSuporte_id INT NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    senha VARCHAR(64) NOT NULL,
+    dataCadastro DATE NOT NULL,
+    CONSTRAINT FK_Empresa_EquipeSuporte FOREIGN KEY (equipeSuporte_id) REFERENCES dbo.EquipeSuporte (id)
+);
+
+-- Tabela Projeto
+CREATE TABLE dbo.Projeto (
+    id INT PRIMARY KEY,
+    empresa_id INT NOT NULL,
+    titulo VARCHAR(200) NOT NULL,
+    descricao VARCHAR(5000) NOT NULL,
+    dataPublicacao DATE NOT NULL,
+    prazo DATE NOT NULL,
+    orcamento DECIMAL(18, 2) NOT NULL,
+    CONSTRAINT FK_Projeto_Empresa FOREIGN KEY (empresa_id) REFERENCES dbo.Empresa (id)
+);
+
+-- Tabela Candidatura
+CREATE TABLE dbo.Candidatura (
+    id INT PRIMARY KEY,
+    freelancer_id INT NOT NULL,
+    projeto_id INT NOT NULL,
+    data DATE NOT NULL,
+    CONSTRAINT FK_Candidatura_Freelancer FOREIGN KEY (freelancer_id) REFERENCES dbo.Freelancer (id),
+    CONSTRAINT FK_Candidatura_Projeto FOREIGN KEY (projeto_id) REFERENCES dbo.Projeto (id)
+);
+
+-- Tabela Avaliacao
+CREATE TABLE dbo.Avaliacao (
+    id INT PRIMARY KEY,
+    freelancer_id INT NOT NULL,
+    nota TINYINT NOT NULL,
+    descricao VARCHAR(255) NOT NULL,
+    data DATE NOT NULL,
+    CONSTRAINT FK_Avaliacao_Freelancer FOREIGN KEY (freelancer_id) REFERENCES dbo.Freelancer (id)
+);
+
+-- Tabela Contato (Exemplo de Tabela Extra para Contato)
+CREATE TABLE dbo.Contato (
+    id INT PRIMARY KEY,
+    freelancer_id INT NOT NULL,
+    empresa_id INT NOT NULL,
+    equipeSuporte_id INT NOT NULL,
+    telefone VARCHAR(11) NOT NULL,
+    whatsapp TINYINT NULL,
+    email VARCHAR(100) NOT NULL,
+    CONSTRAINT FK_Contato_Freelancer FOREIGN KEY (freelancer_id) REFERENCES dbo.Freelancer (id),
+    CONSTRAINT FK_Contato_Empresa FOREIGN KEY (empresa_id) REFERENCES dbo.Empresa (id),
+    CONSTRAINT FK_Contato_EquipeSuporte FOREIGN KEY (equipeSuporte_id) REFERENCES dbo.EquipeSuporte (id)
+);
+
+-- Tabela Habilidade (Exemplo de Tabela Extra para Habilidades)
+CREATE TABLE dbo.Habilidade (
+    id INT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL
+);
+
+-- Tabela StatusProjeto (Exemplo de Tabela Extra para Status do Projeto)
+CREATE TABLE dbo.StatusProjeto (
+    id INT PRIMARY KEY,
+    projeto_id INT NOT NULL,
+    nome VARCHAR(45) NOT NULL,
+    CONSTRAINT FK_StatusProjeto_Projeto FOREIGN KEY (projeto_id) REFERENCES dbo.Projeto (id)
+);
+
+-- Tabela HabilidadeFreelancer (Exemplo de Tabela Extra para Relacionamento N:N)
+CREATE TABLE dbo.HabilidadeFreelancer (
+    habilidade_id INT NOT NULL,
+    freelancer_id INT NOT NULL,
+    PRIMARY KEY (habilidade_id, freelancer_id),
+    CONSTRAINT FK_HabilidadeFreelancer_Habilidade FOREIGN KEY (habilidade_id) REFERENCES dbo.Habilidade (id),
+    CONSTRAINT FK_HabilidadeFreelancer_Freelancer FOREIGN KEY (freelancer_id) REFERENCES dbo.Freelancer (id)
+);
+
+
+INSERTS
+
+-- Inserir um freelancer
+INSERT INTO dbo.Freelancer (id, nome, sobrenome, dataNascimento, email, senha, experiencia, portfolio, dataCadastro)
+VALUES (1, 'João', 'Silva', '1990-05-15', 'joao@email.com', 'senha123', 'Experiência em desenvolvimento web', 'www.portfolio.com', GETDATE());
+
+-- Inserir uma equipe de suporte
+INSERT INTO dbo.EquipeSuporte (id, responsavel)
+VALUES (1, 'Ana');
+
+-- Inserir uma empresa com equipe de suporte
+INSERT INTO dbo.Empresa (id, equipeSuporte_id, nome, email, senha, dataCadastro)
+VALUES (1, 1, 'Empresa A', 'contato@empresa.com', 'senha456', GETDATE());
+
+-- Inserir um projeto
+INSERT INTO dbo.Projeto (id, empresa_id, titulo, descricao, dataPublicacao, prazo, orcamento)
+VALUES (1, 1, 'Desenvolvimento de Website', 'Projeto para criar um site responsivo', GETDATE(), '2023-09-01', 5000.00);
+
+-- Inserir uma candidatura
+INSERT INTO dbo.Candidatura (id, freelancer_id, projeto_id, data)
+VALUES (1, 1, 1, GETDATE());
+
+-- Inserir uma avaliação
+INSERT INTO dbo.Avaliacao (id, freelancer_id, nota, descricao, data)
+VALUES (1, 1, 5, 'Freelancer entregou o projeto no prazo e com alta qualidade.', GETDATE());
+
+
+
+SELECTS
+
+-- Exemplo de Consulta: Selecionar todos os projetos de uma empresa específica
+SELECT * FROM dbo.Projeto WHERE empresa_id = 1;
+
+-- Exemplo de Consulta: Selecionar os freelancers que se candidataram para um projeto específico
+SELECT f.nome, f.sobrenome
+FROM dbo.Candidatura c
+JOIN dbo.Freelancer f ON c.freelancer_id = f.id
+WHERE c.projeto_id = 1;
+
+-- Exemplo de Consulta: Selecionar o nome e a nota das avaliações de um freelancer específico
+SELECT f.nome, a.nota
+FROM dbo.Avaliacao a
+JOIN dbo.Freelancer f ON a.freelancer_id = f.id
+WHERE a.freelancer_id = 1;
+
+-- Exemplo de Consulta: Contar o número de candidaturas em um projeto específico
+SELECT COUNT(*) AS NumeroDeCandidaturas
+FROM dbo.Candidatura
+WHERE projeto_id = 1;
+
+-- Exemplo de Consulta: Selecionar o nome e a experiência dos freelancers com habilidade específica
+SELECT f.nome, f.experiencia
+FROM dbo.Freelancer f
+JOIN dbo.HabilidadeFreelancer hf ON f.id = hf.freelancer_id
+JOIN dbo.Habilidade h ON hf.habilidade_id = h.id
+WHERE h.nome = 'Desenvolvimento Web';
+
+
+
+VERSAO 2.0
+
+
+
+-- Tabela freelancer
+CREATE TABLE freelancer (
+    id INT PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL,
+    sobrenome VARCHAR(100) NOT NULL,
+    dataNascimento DATE NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    senha VARCHAR(64) NOT NULL,
+    experiencia VARCHAR(5000) NOT NULL,
+    portfolio VARCHAR(500) NOT NULL,
+    dataCadastro DATETIME NOT NULL
+);
+
+-- Tabela equipeSuporte
+CREATE TABLE equipeSuporte (
+    id INT PRIMARY KEY,
+    responsavel VARCHAR(100) NOT NULL
+);
+
+-- Tabela empresa
+CREATE TABLE empresa (
+    id INT PRIMARY KEY,
+    equipeSuporteId INT NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    senha VARCHAR(64) NOT NULL,
+    dataCadastro DATE NOT NULL,
+    CONSTRAINT FK_empresa_equipeSuporte FOREIGN KEY (equipeSuporteId) REFERENCES equipeSuporte (id)
+);
+
+-- Tabela projeto
+CREATE TABLE projeto (
+    id INT PRIMARY KEY,
+    empresaId INT NOT NULL,
+    titulo VARCHAR(200) NOT NULL,
+    descricao VARCHAR(5000) NOT NULL,
+    dataPublicacao DATE NOT NULL,
+    prazo DATE NOT NULL,
+    orcamento DECIMAL(18, 2) NOT NULL,
+    CONSTRAINT FK_projeto_empresa FOREIGN KEY (empresaId) REFERENCES empresa (id)
+);
+
+-- Tabela candidatura
+CREATE TABLE candidatura (
+    id INT PRIMARY KEY,
+    freelancerId INT NOT NULL,
+    projetoId INT NOT NULL,
+    data DATE NOT NULL,
+    CONSTRAINT FK_candidatura_freelancer FOREIGN KEY (freelancerId) REFERENCES freelancer (id),
+    CONSTRAINT FK_candidatura_projeto FOREIGN KEY (projetoId) REFERENCES projeto (id)
+);
+
+-- Tabela avaliacao
+CREATE TABLE avaliacao (
+    id INT PRIMARY KEY,
+    freelancerId INT NOT NULL,
+    nota TINYINT NOT NULL,
+    descricao VARCHAR(255) NOT NULL,
+    data DATE NOT NULL,
+    CONSTRAINT FK_avaliacao_freelancer FOREIGN KEY (freelancerId) REFERENCES freelancer (id)
+);
+
+-- Tabela contato
+CREATE TABLE contato (
+    id INT PRIMARY KEY,
+    freelancerId INT NOT NULL,
+    empresaId INT NOT NULL,
+    equipeSuporteId INT NOT NULL,
+    telefone VARCHAR(11) NOT NULL,
+    whatsapp TINYINT NULL,
+    email VARCHAR(100) NOT NULL,
+    CONSTRAINT FK_contato_freelancer FOREIGN KEY (freelancerId) REFERENCES freelancer (id),
+    CONSTRAINT FK_contato_empresa FOREIGN KEY (empresaId) REFERENCES empresa (id),
+    CONSTRAINT FK_contato_equipeSuporte FOREIGN KEY (equipeSuporteId) REFERENCES equipeSuporte (id)
+);
+
+-- Tabela habilidade
+CREATE TABLE habilidade (
+    id INT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL
+);
+
+-- Tabela habilidadeFreelancer
+CREATE TABLE habilidadeFreelancer (
+    habilidadeId INT NOT NULL,
+    freelancerId INT NOT NULL,
+    PRIMARY KEY (habilidadeId, freelancerId),
+    CONSTRAINT FK_habilidadeFreelancer_habilidade FOREIGN KEY (habilidadeId) REFERENCES habilidade (id),
+    CONSTRAINT FK_habilidadeFreelancer_freelancer FOREIGN KEY (freelancerId) REFERENCES freelancer (id)
+);
+
+-- Tabela statusProjeto
+CREATE TABLE statusProjeto (
+    id INT PRIMARY KEY,
+    projetoId INT NOT NULL,
+    nome VARCHAR(45) NOT NULL,
+    CONSTRAINT FK_statusProjeto_projeto FOREIGN KEY (projetoId) REFERENCES projeto (id)
+);
+
+-- Exemplos de Instruções INSERT:
+
+-- Inserir um freelancer
+INSERT INTO freelancer (id, nome, sobrenome, dataNascimento, email, senha, experiencia, portfolio, dataCadastro)
+VALUES (1, 'João', 'Silva', '1990-05-15', 'joao@email.com', 'senha123', 'Experiência em desenvolvimento web', 'www.portfolio.com', GETDATE());
+
+-- Inserir uma equipe de suporte
+INSERT INTO equipeSuporte (id, responsavel)
+VALUES (1, 'Ana');
+
+-- Inserir uma empresa com equipe de suporte
+INSERT INTO empresa (id, equipeSuporteId, nome, email, senha, dataCadastro)
+VALUES (1, 1, 'Empresa A', 'contato@empresa.com', 'senha456', GETDATE());
+
+-- Inserir um projeto
+INSERT INTO projeto (id, empresaId, titulo, descricao, dataPublicacao, prazo, orcamento)
+VALUES (1, 1, 'Desenvolvimento de Website', 'Projeto para criar um site responsivo', GETDATE(), '2023-09-01', 5000.00);
+
+-- Inserir uma candidatura
+INSERT INTO candidatura (id, freelancerId, projetoId, data)
+VALUES (1, 1, 1, GETDATE());
+
+-- Inserir uma avaliação
+INSERT INTO avaliacao (id, freelancerId, nota, descricao, data)
+VALUES (1, 1, 5, 'Freelancer entregou o projeto no prazo e com alta qualidade.', GETDATE());
+
+-- Exemplos de Instruções SELECT:
+
+-- Exemplo de Consulta: Selecionar todos os projetos de uma empresa específica
+SELECT * FROM projeto WHERE empresaId = 1;
+
+-- Exemplo de Consulta: Selecionar os freelancers que se candidataram para um projeto específico
+SELECT f.nome, f.sobrenome
+FROM candidatura c
+JOIN freelancer f ON c.freelancerId = f.id
+WHERE c.projetoId = 1;
+
+-- Exemplo de Consulta: Selecionar o nome e a nota das avaliações de um freelancer específico
+SELECT f.nome, a.nota
+FROM avaliacao a
+JOIN freelancer f ON a.freelancerId = f.id
+WHERE a.freelancerId = 1;
+
+-- Exemplo de Consulta: Contar o número de candidaturas em um projeto específico
+SELECT COUNT(*) AS NumeroDeCandidaturas
+FROM candidatura
+WHERE projetoId = 1;
+
+-- Exemplo de Consulta: Selecionar o nome e a experiência dos freelancers com habilidade específica
+SELECT f.nome, f.experiencia
+FROM freelancer f
+JOIN habilidadeFreelancer hf ON f.id = hf.freelancerId
+JOIN habilidade h ON hf.habilidadeId = h.id
+WHERE h.nome = 'Desenvolvimento Web';
+
+
