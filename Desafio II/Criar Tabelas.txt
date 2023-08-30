@@ -1,0 +1,166 @@
+-- Criando a tabela `cliente`
+CREATE TABLE cliente (
+  id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
+  nome VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL,
+  senha VARCHAR(64) NOT NULL,
+  dataRegistro DATE NOT NULL
+);
+
+-- Criando a tabela `pedido`
+CREATE TABLE pedido (
+  id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
+  cliente_id INT NOT NULL,
+  precoTotal DECIMAL(10,2) NOT NULL,
+  dataPedido DATE NOT NULL,
+  FOREIGN KEY (cliente_id) REFERENCES cliente(id)
+);
+
+-- Criando a tabela `tipoProduto`
+CREATE TABLE tipoProduto (
+  id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
+  nome VARCHAR(100) NOT NULL
+);
+
+-- Criando a tabela `produto`
+CREATE TABLE produto (
+  id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
+  tipoProduto_id INT NOT NULL,
+  nome VARCHAR(100) NOT NULL,
+  precoUnitario DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (tipoProduto_id) REFERENCES tipoProduto(id)
+);
+
+-- Criando a tabela `itemPedido`
+CREATE TABLE itemPedido (
+  id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
+  pedido_id INT NOT NULL,
+  produto_id INT NOT NULL,
+  FOREIGN KEY (pedido_id) REFERENCES pedido(id),
+  FOREIGN KEY (produto_id) REFERENCES produto(id)
+);
+
+TAREFA 1:
+
+SELECT cliente.nome
+FROM cliente
+INNER JOIN pedido ON cliente.id = pedido.cliente_id
+WHERE pedido.dataPedido >= DATEADD(DAY, -30, GETDATE());
+
+
+TAREFA 2:
+
+SELECT DISTINCT produto.nome
+FROM produto
+INNER JOIN itemPedido ON produto.id = itemPedido.produto_id
+INNER JOIN pedido ON itemPedido.pedido_id = pedido.id
+WHERE pedido.precoTotal > 200;
+
+TAREFA 3:
+
+SELECT cliente.nome, AVG(pedido.precoTotal) AS valorMedioGasto
+FROM cliente
+LEFT JOIN pedido ON cliente.id = pedido.cliente_id
+GROUP BY cliente.nome;
+
+TAREFA 4:
+
+SELECT nome
+FROM cliente
+WHERE id NOT IN (SELECT DISTINCT cliente_id FROM pedido);
+
+TAREFA 5:
+
+SELECT produto.nome, COUNT(itemPedido.id) AS contagemPedidos
+FROM produto
+LEFT JOIN itemPedido ON produto.id = itemPedido.produto_id
+GROUP BY produto.nome
+ORDER BY contagemPedidos DESC;
+
+TAREFA 6:
+
+SELECT cliente.nome, MIN(pedido.dataPedido) AS dataPrimeiroPedido
+FROM cliente
+LEFT JOIN pedido ON cliente.id = pedido.cliente_id
+GROUP BY cliente.nome
+ORDER BY cliente.nome;
+
+TAREFA 7:
+
+CREATE PROCEDURE InserirCliente
+    @nome VARCHAR(100),
+    @email VARCHAR(100),
+    @senha VARCHAR(64),
+    @dataRegistro DATE
+AS
+BEGIN
+    INSERT INTO cliente (nome, email, senha, dataRegistro)
+    VALUES (@nome, @email, @senha, @dataRegistro);
+END;
+
+TAREFA 8:
+
+CREATE PROCEDURE AtualizarPrecoProduto
+    @produto_id INT,
+    @novoPreco DECIMAL(10,2)
+AS
+BEGIN
+    UPDATE produto
+    SET precoUnitario = @novoPreco
+    WHERE id = @produto_id;
+END;
+
+TAREFA 9:
+
+CREATE PROCEDURE InserirPedido
+    @cliente_id INT,
+    @precoTotal DECIMAL(10,2),
+    @dataPedido DATE
+AS
+BEGIN
+    INSERT INTO pedido (cliente_id, precoTotal, dataPedido)
+    VALUES (@cliente_id, @precoTotal, @dataPedido);
+END;
+
+TAREFA 10:
+
+CREATE PROCEDURE DeletarPedido
+    @pedido_id INT
+AS
+BEGIN
+    DELETE FROM pedido
+    WHERE id = @pedido_id;
+END;
+
+TAREFA 11:
+
+CREATE PROCEDURE ListarProdutosPorTipo
+AS
+BEGIN
+    SELECT tipoProduto.nome, produto.nome AS nomeProduto
+    FROM tipoProduto
+    INNER JOIN produto ON tipoProduto.id = produto.tipoProduto_id
+    ORDER BY tipoProduto.nome, produto.nome;
+END;
+
+TAREFA 12:
+
+SELECT cliente.nome, SUM(pedido.precoTotal) AS totalGasto
+FROM cliente
+INNER JOIN pedido ON cliente.id = pedido.cliente_id
+WHERE pedido.dataPedido >= DATEADD(DAY, -30, GETDATE())
+GROUP BY cliente.nome;
+
+TAREFA 13:
+
+SELECT DISTINCT produto.nome
+FROM produto
+INNER JOIN itemPedido ON produto.id = itemPedido.produto_id
+INNER JOIN pedido ON itemPedido.pedido_id = pedido.id
+WHERE pedido.precoTotal > (SELECT AVG(precoTotal) FROM pedido);
+
+TAREFA 14:
+
+SELECT cliente.nome, cliente.email
+FROM cliente
+WHERE NOT EXISTS (SELECT 1 FROM pedido WHERE pedido.cliente_id = cliente.id);
