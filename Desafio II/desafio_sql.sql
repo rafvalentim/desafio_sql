@@ -205,7 +205,6 @@ SELECT DISTINCT produto.nome
 		INNER JOIN pedido ON itemPedido.pedido_id = pedido.id
 	WHERE pedido.precoTotal > (SELECT AVG(precoTotal) FROM pedido);
 
-	SELECT * FROM produto
 -- Retornar o nome e o e-mail dos clientes que ainda não fizeram nenhum pedido --
 
 SELECT cliente.nome, cliente.email
@@ -214,7 +213,6 @@ SELECT cliente.nome, cliente.email
 
 
 -- Miscellaneous -- 
-
 
 EXEC InserirCliente 'Gustavo Brandão', 'gustavo.bombado@smn.com.br', 'trembolonanaveia', '2023-07-01';
 EXEC InserirCliente 'Guilherme Neves', 'guigas.double.biceps@smn.com.br', 'meushapefalapormim', '2023-05-25';
